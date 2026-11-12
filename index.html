@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="ru"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>BLACK CHERRY 🍒 Wheel of Fortune</title>
+<style>
+:root{--bg:#07020a;--red:#e0102f;--cherry:#b00a2a;--wine:#3a0614;--w:#fff}
+*{box-sizing:border-box}
+body{margin:0;min-height:100vh;color:var(--w);font-family:Georgia,'Times New Roman',serif;
+background:radial-gradient(900px 500px at 50% -10%,#5a0a1e55,transparent),radial-gradient(700px 500px at 90% 100%,#e0102f22,transparent),var(--bg)}
+.wrap{max-width:980px;margin:0 auto;padding:18px 14px 40px;text-align:center}
+.brand{letter-spacing:.35em;font-size:.8rem;color:#ff5a74;text-shadow:0 0 12px var(--red)}
+.brand b{border:1px solid var(--red);padding:2px 8px;border-radius:6px;margin-right:8px}
+h1{margin:10px 0 4px;font-size:clamp(1.2rem,4.2vw,2rem);font-weight:400;font-style:italic;text-shadow:0 0 18px var(--red),0 0 4px #ff9aa9}
+.sub{opacity:.6;font-size:.85rem;margin-bottom:14px}
+.glass{background:linear-gradient(160deg,#ffffff0f,#ffffff05);border:1px solid #e0102f55;border-radius:18px;backdrop-filter:blur(8px);box-shadow:0 0 30px #e0102f22}
+#card{height:0;opacity:0;overflow:hidden;transition:all .6s cubic-bezier(.2,.9,.3,1);margin:0 auto;width:min(300px,86%)}
+#card.show{height:auto;opacity:1;margin-bottom:16px;padding:10px;background:#000;border:1px solid var(--red);border-radius:18px;box-shadow:0 0 28px #e0102f88,inset 0 0 18px #e0102f33}
+#img{width:100%;height:min(300px,42vh);object-fit:contain;border-radius:12px;background:#12030a;display:block}
+#fb{display:none;height:min(300px,42vh);align-items:center;justify-content:center;flex-direction:column;border-radius:12px;background:radial-gradient(circle,#5a0a1e,#12030a)}
+#fb .m{font-size:5rem;color:var(--red);text-shadow:0 0 20px var(--red)}
+#nm{font-size:1.5rem;margin-top:8px;text-shadow:0 0 10px var(--red)}
+#gm{font-size:.85rem;color:#ff7a8f;letter-spacing:.15em}
+.stage{position:relative;width:min(92vw,620px);margin:0 auto}
+canvas{width:100%;height:auto;display:block;filter:drop-shadow(0 0 22px #e0102f88)}
+#ptr{position:absolute;left:50%;top:-6px;transform:translateX(-50%);font-size:2rem;color:#fff;filter:drop-shadow(0 0 8px var(--red))}
+#go{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:22%;aspect-ratio:1;border-radius:50%;border:2px solid #fff;
+background:radial-gradient(circle at 35% 30%,#ff4a64,var(--cherry) 60%,#4a0010);color:#fff;font-weight:700;cursor:pointer;font-size:clamp(.6rem,2.4vw,1rem);box-shadow:0 0 22px var(--red)}
+#go:disabled{filter:grayscale(.6);cursor:wait}
+.row{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin:14px 0}
+button.b,.chip{background:#1a0510;color:#fff;border:1px solid #e0102f99;border-radius:999px;padding:8px 16px;cursor:pointer;font:inherit;font-size:.9rem}
+button.b:hover,.chip.on{background:var(--cherry);box-shadow:0 0 14px var(--red)}
+.panel{padding:14px;margin-top:14px;text-align:left}
+.panel h3{margin:0 0 8px;font-weight:400;color:#ff7a8f}
+#hist span,#excl span{display:inline-block;margin:3px;padding:4px 10px;border-radius:999px;background:#3a0614;border:1px solid #e0102f66;font-size:.85rem}
+#excl span{cursor:pointer}#excl span:hover{background:var(--cherry)}
+.sep{color:var(--red);letter-spacing:.6em;margin:6px 0}
+.fl{position:fixed;top:-30px;pointer-events:none;animation:fall linear forwards;z-index:5}
+@keyframes fall{to{transform:translateY(110vh) rotate(360deg);opacity:.2}}
+</style></head><body><div class="wrap">
+<div class="brand"><b>🔞</b>BLACK CHERRY 🍒</div>
+<h1>выбери свою героиню и любимицу на сегодняшний день : </h1>
+<div class="sep">♨️ ❤️ 👠</div>
+<div id="card"><img id="img" alt=""><div id="fb"><div class="m" id="mono"></div></div><div id="nm"></div><div id="gm"></div></div>
+<div class="stage"><div id="ptr">▼</div><canvas id="cv" width="1200" height="1200"></canvas><button id="go">КРУТИТЬ</button></div>
+<div class="row" id="filters"></div>
+<div class="row"><button class="b" id="spin">🍒 КРУТИТЬ</button><button class="b" id="rnd">❤️ СЛУЧАЙНАЯ ГЕРОИНЯ</button><button class="b" id="reset">♨️ Сбросить историю</button><button class="b" id="back">👠 Вернуть исключённых</button></div>
+<div class="glass panel"><h3>Вращений: <span id="cnt">0</span> · В колесе: <span id="left"></span></h3><div id="hist"></div></div>
+<div class="glass panel"><h3>Исключены (нажми, чтобы вернуть)</h3><div id="excl"></div></div>
+</div>
+<script>
+// ---- База: [имя, игра, (необязательно) название страницы на вики] ----
+const G='Genshin Impact',Z='Zenless Zone Zero',H='Honkai: Star Rail';
+const R=[];const add=(g,s)=>s.split('|').forEach(x=>{const [n,t]=x.split('=');R.push([n,g,t||n])});
+add(G,'Lumine|Amber|Lisa|Barbara|Jean|Noelle|Fischl|Mona|Keqing|Ningguang|Xiangling|Beidou|Xinyan|Rosaria|Diona|Sucrose|Yanfei|Eula|Hu Tao|Yun Jin|Ganyu|Shenhe|Kujou Sara|Raiden Shogun|Sangonomiya Kokomi|Yoimiya|Kamisato Ayaka|Kuki Shinobu|Yae Miko|Collei|Dori|Candace|Layla|Nilou|Faruzan|Mualani|Kachina|Kirara|Xilonen|Chasca|Citlali|Mavuika|Lan Yan|Mizuki|Emilie|Navia|Furina|Clorinde|Arlecchino|Chevreuse|Lynette|Sigewinne|Escoffier|Varesa|Ineffa|Columbina|Aino|Lauma|Nefer');
+add(Z,'Anby Demara|Nicole Demara|Ellen Joe|Soukaku|Koleda Belobog|Corin Wickes|Hoshimi Miyabi=Miyabi|Jane Doe|Burnice White|Yanagi|Lucy|Piper Wheel|Zhu Yuan|Qingyi|Astra Yao|Evelyn Chevalier|Vivian Banshee|Pulchra Fellini|Yixuan|Ju Fufu|Alice Thymefield|Yuzuha|Soldier 11|Nekomiya Mana=Nekomata|Rina|Ye Shunguang');
+add(H,'Stelle|March 7th|Himeko|Herta|Serval|Natasha|Pela|Asta|Qingque|Tingyun|Yukong|Bronya|Seele|Jingliu|Clara|Silver Wolf|Kafka|Guinaifen|Hanya|Xueyi|Huohuo|Jade|Lingsha|Ruan Mei|Black Swan|Sparkle|Acheron|Robin|Fugue|Firefly|Topaz and Numby=Topaz|Rappa|Feixiao|Yunli|Lynx|Hysilens|Cerydra|Cyrene|Castorice|Hyacine|Aglaea|Evernight|The Herta|Yao Guang|Sparxie');
+const WIKI={[G]:'genshin-impact',[Z]:'zenless-zone-zero',[H]:'honkai-star-rail'};
+const EMB={[G]:'✦',[Z]:'◈',[H]:'✧'};
+const $=id=>document.getElementById(id);const LS=k=>JSON.parse(localStorage.getItem('bc_'+k)||'null');const SV=(k,v)=>localStorage.setItem('bc_'+k,JSON.stringify(v));
+let hist=LS('hist')||[],spins=LS('spins')||0,games=new Set(LS('games')||[G,Z,H]),rot=0,busy=false;
+const cv=$('cv'),cx=cv.getContext('2d');
+const pool=()=>R.filter(r=>games.has(r[1])&&!hist.includes(r[0]));
+function draw(){const L=pool(),n=L.length,W=cv.width,c=W/2,Rr=c-30;cx.clearRect(0,0,W,W);
+ cx.beginPath();cx.arc(c,c,c-6,0,7);cx.fillStyle='#000';cx.fill();cx.lineWidth=8;cx.strokeStyle='#e0102f';cx.stroke();
+ if(!n){cx.fillStyle='#fff';cx.font='40px Georgia';cx.textAlign='center';cx.fillText('Все исключены — верни героинь',c,c);return}
+ const st=2*Math.PI/n,pal=['#12030a','#6b0a20','#2a0510','#b00a2a'];
+ for(let i=0;i<n;i++){const a=rot+i*st-Math.PI/2;cx.beginPath();cx.moveTo(c,c);cx.arc(c,c,Rr,a,a+st);cx.closePath();
+  cx.fillStyle=pal[i%4];cx.fill();cx.strokeStyle='#ff3a58aa';cx.lineWidth=n>60?1:2;cx.stroke();
+  cx.save();cx.translate(c,c);cx.rotate(a+st/2);cx.fillStyle='#fff';cx.textAlign='right';cx.textBaseline='middle';
+  const fs=Math.max(7,Math.min(30,Rr*st*.5));cx.font=fs+'px Georgia';cx.fillText(L[i][0],Rr-14,0);cx.restore()}
+ cx.beginPath();cx.arc(c,c,W*.13,0,7);cx.fillStyle='#000';cx.fill();cx.lineWidth=6;cx.strokeStyle='#e0102f';cx.stroke()}
+function spinTo(i,n,dur){return new Promise(res=>{const st=2*Math.PI/n,tgt=-(i+.5)*st,d=(((tgt-rot)%(2*Math.PI))+2*Math.PI)%(2*Math.PI)+2*Math.PI*(5+Math.random()*2|0);
+ const r0=rot,t0=performance.now();(function f(t){const p=Math.min(1,(t-t0)/dur);rot=r0+d*(1-Math.pow(1-p,4));draw();p<1?requestAnimationFrame(f):res()})(t0)})}
+async function run(fast){if(busy)return;const L=pool();if(!L.length)return;busy=true;$('go').disabled=true;
+ const i=crypto.getRandomValues(new Uint32Array(1))[0]%L.length;$('card').classList.remove('show');
+ await spinTo(i,L.length,fast?1500:5200);const w=L[i];spins++;hist.unshift(w[0]);SV('hist',hist);SV('spins',spins);
+ await show(w);confetti();rot=0;ui();busy=false;$('go').disabled=false}
+async function img(w){const k='img_'+w[0];const c=localStorage.getItem('bc_'+k);if(c)return c;
+ const u=`https://${WIKI[w[1]]}.fandom.com/api.php?action=query&redirects=1&titles=${encodeURIComponent(w[2])}&prop=pageimages&pithumbsize=600&format=json&origin=*`;
+ try{const j=await (await fetch(u)).json();const p=Object.values(j.query.pages)[0];if(p&&p.thumbnail){localStorage.setItem('bc_'+k,p.thumbnail.source);return p.thumbnail.source}}catch(e){}
+ try{const u2=`https://${WIKI[w[1]]}.fandom.com/api.php?action=parse&redirects=1&page=${encodeURIComponent(w[2])}&prop=text&format=json&origin=*`;
+  const j=await (await fetch(u2)).json();const d=new DOMParser().parseFromString(j.parse.text['*'],'text/html');
+  const el=d.querySelector('.portable-infobox img, aside img, figure img, img[data-src], img[src*="static.wikia"]');
+  let s=el&&(el.getAttribute('data-src')||el.getAttribute('src'));
+  if(s&&!s.startsWith('data:')){s=s.replace(/\/revision\/latest\/scale-to-width-down\/\d+/,'/revision/latest/scale-to-width-down/600');localStorage.setItem('bc_'+k,s);return s}}catch(e){}
+ return null}
+async function show(w){$('nm').textContent=w[0];$('gm').textContent=w[1].toUpperCase();$('mono').textContent=EMB[w[1]]+' '+w[0][0];
+ $('card').classList.add('show');const im=$('img'),fb=$('fb');im.style.display='none';fb.style.display='flex';
+ const src=await img(w);if(!src)return;im.onload=()=>{im.style.display='block';fb.style.display='none'};im.onerror=()=>{im.style.display='none';fb.style.display='flex'};im.src=src}
+function confetti(){for(let k=0;k<22;k++){const e=document.createElement('div');e.className='fl';e.textContent=['🍒','❤️'][k%2];e.style.left=Math.random()*100+'vw';e.style.fontSize=14+Math.random()*16+'px';e.style.animationDuration=2+Math.random()*2+'s';document.body.appendChild(e);setTimeout(()=>e.remove(),4500)}}
+function ui(){$('cnt').textContent=spins;$('left').textContent=pool().length;
+ $('hist').innerHTML=hist.map(n=>`<span>🍒 ${n}</span>`).join('')||'<span>пока пусто</span>';
+ $('excl').innerHTML=hist.map(n=>`<span data-n="${n}">${n} ✕</span>`).join('')||'<span>никого</span>';
+ $('excl').querySelectorAll('span[data-n]').forEach(s=>s.onclick=()=>{hist=hist.filter(x=>x!==s.dataset.n);SV('hist',hist);ui()});
+ $('filters').innerHTML='';[G,Z,H].forEach(g=>{const b=document.createElement('button');b.className='chip'+(games.has(g)?' on':'');b.textContent=EMB[g]+' '+g;
+  b.onclick=()=>{games.has(g)?games.delete(g):games.add(g);if(!games.size)games.add(g);SV('games',[...games]);ui()};$('filters').appendChild(b)});draw()}
+$('go').onclick=$('spin').onclick=()=>run(false);$('rnd').onclick=()=>run(true);
+$('reset').onclick=()=>{hist=[];spins=0;SV('hist',hist);SV('spins',0);$('card').classList.remove('show');ui()};
+$('back').onclick=()=>{hist=[];SV('hist',hist);ui()};
+ui();
+</script></body></html>
