@@ -75,14 +75,15 @@ async function run(fast){if(busy)return;const L=pool();if(!L.length)return;busy=
  const i=crypto.getRandomValues(new Uint32Array(1))[0]%L.length;$('card').classList.remove('show');
  await spinTo(i,L.length,fast?1500:5200);const w=L[i];spins++;hist.unshift(w[0]);SV('hist',hist);SV('spins',spins);
  await show(w);confetti();rot=0;ui();busy=false;$('go').disabled=false}
-async function img(w){const k='img_'+w[0];const c=localStorage.getItem('bc_'+k);if(c)return c;
- const u=`https://${WIKI[w[1]]}.fandom.com/api.php?action=query&redirects=1&titles=${encodeURIComponent(w[2])}&prop=pageimages&pithumbsize=600&format=json&origin=*`;
- try{const j=await (await fetch(u)).json();const p=Object.values(j.query.pages)[0];if(p&&p.thumbnail){localStorage.setItem('bc_'+k,p.thumbnail.source);return p.thumbnail.source}}catch(e){}
- try{const u2=`https://${WIKI[w[1]]}.fandom.com/api.php?action=parse&redirects=1&page=${encodeURIComponent(w[2])}&prop=text&format=json&origin=*`;
-  const j=await (await fetch(u2)).json();const d=new DOMParser().parseFromString(j.parse.text['*'],'text/html');
-  const el=d.querySelector('.portable-infobox img, aside img, figure img, img[data-src], img[src*="static.wikia"]');
-  let s=el&&(el.getAttribute('data-src')||el.getAttribute('src'));
-  if(s&&!s.startsWith('data:')){s=s.replace(/\/revision\/latest\/scale-to-width-down\/\d+/,'/revision/latest/scale-to-width-down/600');localStorage.setItem('bc_'+k,s);return s}}catch(e){}
+const bad=s=>!s||s.startsWith('data:')||/placeholder|lazy|Site-logo|Wiki\.png|Icon_|\.svg|1x1/i.test(s)||!/static\.wikia\.nocookie\.net|vignette/.test(s);
+const big=s=>s.replace(/\/revision\/latest\/(scale-to-width-down|smart\/width|zoom-crop)[^?]*/,'/revision/latest').replace(/\?cb=.*$/,'$&');
+async function img(w){const k='img2_'+w[0];const c=localStorage.getItem('bc_'+k);if(c)return c;const B=`https://${WIKI[w[1]]}.fandom.com/api.php`,T=encodeURIComponent(w[2]);
+ try{const j=await (await fetch(`${B}?action=query&redirects=1&titles=${T}&prop=pageimages&pithumbsize=600&format=json&origin=*`)).json();const p=Object.values(j.query.pages)[0];
+  const s=p&&p.thumbnail&&p.thumbnail.source;if(!bad(s)){localStorage.setItem('bc_'+k,s);return s}}catch(e){}
+ try{const j=await (await fetch(`${B}?action=parse&redirects=1&page=${T}&prop=text&format=json&origin=*`)).json();const d=new DOMParser().parseFromString(j.parse.text['*'],'text/html');
+  for(const el of d.querySelectorAll('.portable-infobox img, aside img, figure img, img')){
+   const s=el.getAttribute('data-src')||el.getAttribute('src');if(bad(s))continue;
+   const u=big(s);localStorage.setItem('bc_'+k,u);return u}}catch(e){}
  return null}
 async function show(w){$('nm').textContent=w[0];$('gm').textContent=w[1].toUpperCase();$('mono').textContent=EMB[w[1]]+' '+w[0][0];
  $('card').classList.add('show');const im=$('img'),fb=$('fb');im.style.display='none';fb.style.display='flex';
